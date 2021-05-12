@@ -18,6 +18,7 @@ const bidiMapperSession = async (mapperContent, cdpUrl, onBidiMessage) => {
     const _commandCallbacks = [];
     let ws;
     let sessionId;
+    let launched = false;
 
     const _establishSession = async function () {
         return new Promise(resolve => {
@@ -41,7 +42,7 @@ const bidiMapperSession = async (mapperContent, cdpUrl, onBidiMessage) => {
                         _onConsoleMessage(data)
                         return;
                     }
-                    if (data.method === "Runtime.bindingCalled" && data.params.name === "sendBidiResponse") {
+                    if (launched && data.method === "Runtime.bindingCalled" && data.params.name === "sendBidiResponse") {
                         onBidiMessage(data.params.payload);
                         return;
                     }
@@ -130,6 +131,7 @@ const bidiMapperSession = async (mapperContent, cdpUrl, onBidiMessage) => {
     });
 
     debugInternal("Launched!");
+    launched = true;
 
     return {
         sendBidiCommand: async function (message) {

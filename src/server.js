@@ -8,22 +8,24 @@ const mapperReader = require('./mapperReader.js');
 
 (async () => {
     try {
-        let bidiMapperSession;
-        let bidiServer;
+        createBidiServer.runBidiServer(async ({ initialisationComplete }) => {
+            const cdpUrl = await browserLauncher.launch();
+            const bidiMapperScript = await mapperReader.readMapper();
 
-        const cdpUrl = await browserLauncher.launch();
-        const bidiMapperScript = await mapperReader.readMapper();
+            let bidiServer;
 
-        bidiMapperSession = await createBidiMapperSession.create(bidiMapperScript, cdpUrl, (mapperMessage) => {
-            console.log("Mapper message received:\n", mapperMessage);
-            if (bidiServer)
-                bidiServer.sendMessage(mapperMessage);
-        });
+            const bidiMapperSession = await createBidiMapperSession.create(bidiMapperScript, cdpUrl, (mapperMessage) => {
+                console.log("Mapper message received:\n", mapperMessage);
+                if (bidiServer)
+                    bidiServer.sendMessage(mapperMessage);
+            });
 
-        bidiServer = await createBidiServer.create((bidiMessage) => {
-            console.log("Mapper message received:\n", bidiMessage);
-            if (bidiMapperSession)
-                bidiMapperSession.sendBidiCommand(bidiMessage);
+
+            bidiServer = initialisationComplete();
+
+            bidiServer.setOnMessageHandler((message) => {
+                bidiMapperSession.sendBidiCommand(message);
+            });
         });
     } catch (e) {
         console.log("Error", e);
